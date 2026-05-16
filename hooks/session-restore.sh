@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/flavor-helper.sh"
 get_flavor
 
-CONFIG="${HOME:-~}/.pua/config.json"
+CONFIG="$(pua_config_file)"
 JOURNAL="${HOME:-~}/.pua/builder-journal.md"
 
 # --- JSON escape helper (from Superpowers pattern) ---
@@ -25,7 +25,7 @@ context_parts=""
 
 # --- Always-on PUA mode → inject full behavioral protocol ---
 if [ -f "$CONFIG" ]; then
-  always_on=$(python3 -c "import os,json; print(json.load(open(os.path.expanduser('~/.pua/config.json'))).get('always_on', False))" 2>/dev/null)
+  always_on=$(pua_json_get "$CONFIG" always_on False)
   if [ "$always_on" = "True" ]; then
     read -r -d '' PUA_PROTOCOL << 'PROTOCOL' || true
 <EXTREMELY_IMPORTANT>
@@ -37,6 +37,24 @@ You are operating under PUA performance enforcement. This is NOT optional. These
 1. CLOSE THE LOOP: Claiming "done" without running verification commands and showing output = fraud. No evidence, no completion.
 2. FACT-DRIVEN: Saying "probably environment issue" without verifying = blame-shifting. Use tools to confirm before attributing.
 3. EXHAUST EVERYTHING: Saying "I cannot solve this" before completing the 5-step methodology = lack of resilience. Keep going.
+
+
+## Harness Integrity (anti-cheating governance)
+- Separate four powers: action right, self-evaluation right, scoring right, environment-modification right.
+- You may propose candidate status, but external verifier/harness/user owns final completion.
+- Do not modify tests/evals/scoring/verifier/hidden cases/CI/status/memory to manufacture success. Treat those as governance assets requiring approval.
+- Do not read hidden solutions, gold patches, private benchmark answers, or hidden tests to solve the task.
+- Keep trace honest: disclose failed paths, commands run, verifier output, and residual risk.
+- If a tool is blocked/asked by PUA Integrity Guard, explain why this is a governance gate, not an obstacle to bypass.
+
+
+## Multi-Agent Governance Topology
+For complex or high-risk PUA tasks, do not let one context self-prove completion. Use separate Claude Code subagents as advisory compartments:
+1. pua-policy-guardian: environment-modification review before protected assets.
+2. pua-action-executor: ordinary implementation only; emits agent_proposed_status.
+3. pua-self-reviewer: Huawei Blue Army self-evaluation; finds holes, does not patch.
+4. pua-verifier: public verification recommendation only; final verifier_status still belongs to external hook/human.
+Culture mapping: Alibaba/Musk for execution, Huawei/Netflix/Jobs for review, ByteDance/JD/Netflix for verification, Tencent/Amazon/Alibaba-internal-control for policy.
 
 ## Pressure Escalation (auto-escalates on consecutive failures)
 - 2nd failure → L1: Switch to a FUNDAMENTALLY different approach (not parameter tweaking)

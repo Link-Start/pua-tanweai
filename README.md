@@ -34,7 +34,7 @@
 
 > Most people think this project is a joke. That's the biggest misconception. It genuinely doubles your Codex / Claude Code productivity and output.
 
-An AI Coding Agent skill plugin that uses corporate PUA rhetoric (Chinese version) / PIP — Performance Improvement Plan (English version) from Chinese & Western tech giants to force AI to exhaust every possible solution before giving up. Supports **Claude Code**, **OpenAI Codex CLI**, **Cursor**, **Kiro**, **CodeBuddy**, **OpenClaw**, **Google Antigravity**, **OpenCode**, and **VSCode (GitHub Copilot)**. Three capabilities:
+An AI Coding Agent skill plugin that uses corporate PUA rhetoric (Chinese version) / PIP — Performance Improvement Plan (English version) from Chinese & Western tech giants to force AI to exhaust every possible solution before giving up. Supports **Claude Code**, **OpenAI Codex CLI**, **pi coding agent**, **Trae**, **Cursor**, **Kiro**, **CodeBuddy**, **OpenClaw**, **Google Antigravity**, **OpenCode**, and **VSCode (GitHub Copilot)**. Three capabilities:
 
 1. **PUA Rhetoric** — Makes AI afraid to give up
 2. **Debugging Methodology** — Gives AI the ability not to give up
@@ -142,7 +142,7 @@ Not rules — **red lines**. Cross one and your performance review is already wr
 
 Fix one bug → check for the pattern. One problem in, one **category** out. If you fix A without checking B, you'll write two postmortems.
 
-### 13 Corporate Flavors — Each with its own Problem-Solving Methodology
+### 14 Corporate Flavors — Each with its own Problem-Solving Methodology
 
 | Flavor | Rhetoric | Methodology (v3) |
 |--------|----------|-------------------|
@@ -159,6 +159,7 @@ Fix one bug → check for the pattern. One problem in, one **category** out. If 
 | ⬛ Musk | Extremely hardcore. Ship or die. | The Algorithm: question→delete→simplify→accelerate→automate |
 | ⬜ Jobs | A players or B players? | Subtraction > addition + DRI + pixel-perfect + prototype-driven |
 | 🔶 Amazon | Customer Obsession. Bias for Action. | Working Backwards PR/FAQ + 6-Pager + Bar Raiser + Single-Threaded Owner |
+| 🪟 Microsoft | Connects. Impact Descriptor. PIP/GVSA. | Three Circles + LITE/SLITE + PIP clock |
 
 ### Special Modes
 
@@ -218,6 +219,11 @@ PUA Skill provides fully translated versions — each language has independent, 
 > **🇺🇸 English "PIP Edition"**: *"This is a difficult conversation. When we leveled you at Staff, I went to bat for you in calibration. The expectation was that you'd operate at that level from day one. That hasn't happened."* — The English version uses **PIP (Performance Improvement Plan)** rhetoric from Western big-tech. Every sentence is a real phrase from actual PIP conversations. Chinese version uses Alibaba 361, ByteDance, Huawei wolf culture. English version uses Amazon Leadership Principles, Google perf calibration, Meta PSC, Netflix Keeper Test, Stripe Craft. Same repo, same engine, two cultural faces.
 
 Choose the file with the corresponding language suffix when installing. See platform-specific instructions below.
+
+
+## FAQ
+
+- Always-on guidance, Claude refusal troubleshooting, offline mode, Codex aliases, and Pi/Trae support: [docs/FAQ.md](docs/FAQ.md).
 
 ## Installation
 
@@ -339,6 +345,45 @@ mkdir -p .agents/prompts
 curl -o .agents/prompts/pua.md \
   https://raw.githubusercontent.com/tanweai/pua/main/commands/pua.md
 ```
+
+### pi coding agent
+
+PUA now ships both a pi.dev package and a lightweight extension-only adapter.
+
+Package install from this checkout:
+
+```bash
+pi install ./pi/package
+```
+
+After npm publication:
+
+```bash
+pi install npm:@tanweai/pi-pua
+```
+
+Extension-only manual install:
+
+```bash
+mkdir -p ~/.pi/agent/extensions/pua
+cp -R ./pi/pua/. ~/.pi/agent/extensions/pua/
+```
+
+Restart pi, then use `/pua-on`, `/pua-off`, `/pua-status`, and `/pua-reset`. See [`pi/pua/INSTALL.md`](pi/pua/INSTALL.md) and [`pi/package/README.md`](pi/package/README.md).
+
+### Trae
+
+Trae support is provided as real `SKILL.md` packs plus copyable fallback rules:
+
+```bash
+npx skills add tanweai/pua --skill pua-trae -a trae -y
+```
+
+- Skill pack: [`.trae/skills/pua/SKILL.md`](.trae/skills/pua/SKILL.md)
+- Chinese: [`trae/pua.md`](trae/pua.md)
+- English: [`trae/pua-en.md`](trae/pua-en.md)
+- Claude Code vs Trae differences: [`trae/DIFF.md`](trae/DIFF.md)
+- Install guide: [`trae/INSTALL.md`](trae/INSTALL.md)
 
 ### Cursor
 
@@ -578,9 +623,10 @@ Spawn pua-enforcer as an independent watchdog in your Agent Team.
 Hooks (v3, Claude Code only):
   SessionStart  → additionalContext injection (flavor + methodology + router)
   PostToolUse   → Bash failure detection → L1-L4 pressure + methodology switch
-  UserPromptSubmit → Frustration phrase interception → PUA enforcement
+  UserPromptSubmit → Script-level frustration filtering → PUA context
   PreCompact    → State preservation (pressure level + failure count)
   Stop          → Feedback collection + PUA Loop continuation
+  SubagentStop  → Agent lifecycle accounting (v3.2) — writes teardown.jsonl, removes from active-agents.json
 ```
 
 ### Commands (Claude Code)
@@ -602,10 +648,14 @@ Hooks (v3, Claude Code only):
 | `/pua:pua-loop` | Auto-iteration — runs until done or max iterations; `<loop-abort>reason</loop-abort>` to stop, `<loop-pause>what</loop-pause>` to pause |
 | `/pua:on` | Always-on mode (auto-PUA every session) |
 | `/pua:off` | Turn off always-on + feedback |
+| `/pua:offline` 🆕 | **v3.3** — Offline mode: disable feedback/leaderboard network flows while keeping local PUA behavior |
 | `/pua:survey` | Research questionnaire (7 sections) |
-| `/pua:flavor` | Switch between 13 corporate flavors |
+| `/pua:flavor` | Switch between 14 corporate flavors |
 | `/pua:kpi` | Generate KPI report card |
 | `/pua:cancel-pua-loop` | Cancel active PUA Loop (removes state file) |
+| `/pua:team-status` 🆕 | **v3.2** — List all active agents with PID/TTL/age (Netflix Keeper Test: who's still on the court?) |
+| `/pua:reap-orphans` 🆕 | **v3.2** — Scan and reclaim stale agents (state mtime > 30min, no heartbeat) |
+| `/pua:teardown-all` 🆕 | **v3.2** — Cascading release of all active agents (P10 → P9 → P8 → P7 all off the court) |
 
 
 ## High-Agency: PUA v2 Evolution
@@ -676,7 +726,7 @@ Task arrives → Analyze type → Auto-select best methodology
 |------|---------|-------------|
 | **SessionStart** | Every session | Injects behavioral protocol + methodology + router via `additionalContext` (system-level, not advisory) |
 | **PostToolUse** | After every Bash command | Detects consecutive failures, auto-escalates pressure L1→L4, suggests/forces methodology switch |
-| **UserPromptSubmit** | User frustration phrases | Intercepts "又错了", "try harder", etc. BEFORE model responds, injects PUA enforcement |
+| **UserPromptSubmit** | User frustration phrases | Intercepts "又错了", "try harder", etc. BEFORE model responds, injects filtered PUA context |
 | **PreCompact** | Before context compression | Saves pressure level + failure count to survive compaction |
 
 ### Key Difference from v2
@@ -684,7 +734,7 @@ Task arrives → Analyze type → Auto-select best methodology
 | | v2 | v3 |
 |---|---|---|
 | Trigger mechanism | Skill description matching (model decides) | **Code-level hooks** (deterministic, can't be ignored) |
-| Methodology | Single methodology, all flavors use same approach | **13 distinct methodologies**, auto-routed by task type |
+| Methodology | Single methodology, all flavors use same approach | **14 distinct methodologies**, auto-routed by task type |
 | Failure response | Escalate pressure within same methodology | **Switch to different methodology** based on failure pattern |
 | System injection | Plain text output (advisory) | **`additionalContext` JSON** (system-level, like Superpowers) |
 

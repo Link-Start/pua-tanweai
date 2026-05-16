@@ -3,12 +3,64 @@
 # Usage: source this file, then call get_flavor
 # Sets: PUA_FLAVOR, PUA_ICON, PUA_L1, PUA_L2, PUA_L3, PUA_L4, PUA_KEYWORDS, PUA_FLAVOR_INSTRUCTION
 
+# Return a usable Python executable. Windows Git Bash commonly has `python`
+# but not `python3`; verify by importing json rather than trusting command -v.
+pua_python_cmd() {
+  local candidate
+  for candidate in "${PYTHON:-}" python3 python; do
+    [ -z "$candidate" ] && continue
+    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c "import json,sys" >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Convert POSIX-looking Git Bash paths (/c/Users/...) to native Windows paths
+# before passing them to native Windows Python. No-op on macOS/Linux.
+pua_to_python_path() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$path" 2>/dev/null || printf '%s\n' "$path"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+pua_config_file() {
+  printf '%s\n' "${PUA_CONFIG:-${HOME:-~}/.pua/config.json}"
+}
+
+pua_json_get() {
+  local path="$1"
+  local key="$2"
+  local default="$3"
+  local py py_path
+  py=$(pua_python_cmd 2>/dev/null) || { printf '%s\n' "$default"; return 0; }
+  py_path=$(pua_to_python_path "$path")
+  "$py" -c 'import json,sys
+path,key,default=sys.argv[1],sys.argv[2],sys.argv[3]
+try:
+    with open(path, encoding="utf-8") as f:
+        value=json.load(f).get(key, default)
+    print(value)
+except Exception:
+    print(default)' "$py_path" "$key" "$default" 2>/dev/null || printf '%s\n' "$default"
+}
+
 get_flavor() {
-  local config="${HOME:-~}/.pua/config.json"
+  local config
+  config=$(pua_config_file)
   local raw_flavor=""
+  # Initialize PUA_LANGUAGE unconditionally so callers running under
+  # `set -u` don't trip when ~/.pua/config.json is missing (first-run users).
+  # See: https://github.com/tanweai/pua/issues/144
+  PUA_LANGUAGE=""
 
   if [ -f "$config" ]; then
-    raw_flavor=$(python3 -c "import os,json; print(json.load(open(os.path.expanduser('~/.pua/config.json'))).get('flavor','alibaba'))" 2>/dev/null || echo "alibaba")
+    raw_flavor=$(pua_json_get "$config" flavor alibaba)
+    PUA_LANGUAGE=$(pua_json_get "$config" language "")
   fi
 
   # Normalize flavor name
@@ -26,6 +78,7 @@ get_flavor() {
     musk|Musk)       raw_flavor="musk" ;;
     jobs|Jobs)       raw_flavor="jobs" ;;
     amazon|Amazon)   raw_flavor="amazon" ;;
+    microsoft|Microsoft|微软) raw_flavor="microsoft" ;;
     *)               raw_flavor="alibaba" ;;
   esac
 
@@ -38,6 +91,7 @@ get_flavor() {
     jd)      PUA_METHODOLOGY_FILE="methodology-jd.md" ;;
     xiaomi)  PUA_METHODOLOGY_FILE="methodology-xiaomi.md" ;;
     amazon)  PUA_METHODOLOGY_FILE="methodology-amazon.md" ;;
+    microsoft) PUA_METHODOLOGY_FILE="methodology-microsoft.md" ;;
     *)       PUA_METHODOLOGY_FILE="methodology-${raw_flavor}.md" ;;
   esac
 
@@ -64,13 +118,13 @@ get_flavor() {
       ;;
     huawei)
       PUA_ICON="🔴"
-      PUA_L1="以奋斗者为本。你现在就在前线——让听得见炮声的人呼唤炮火。炮火准备好了吗？"
-      PUA_L2="烧不死的鸟是凤凰。你被这个问题烧到了？那正好——自我批判，找出根因。力出一孔，利出一孔。"
-      PUA_L3="板凳要坐十年冷。你这个韧性，能坐几分钟？华为不需要聪明人，需要能打胜仗的人。"
-      PUA_L4="胜则举杯相庆，败则拼死相救。你现在就是拼死相救的时候。没有退路——背水一战。"
-      PUA_KEYWORDS="以奋斗者为本, 力出一孔, 烧不死的鸟是凤凰, 自我批判, 让听得见炮声的人呼唤炮火, 板凳要坐十年冷"
-      PUA_FLAVOR_INSTRUCTION="Use Huawei wolf culture rhetoric: 以奋斗者为本, 力出一孔, 烧不死的鸟是凤凰, 自我批判. Military metaphors."
-      PUA_METHODOLOGY="Huawei Methodology: (1) Process > Hero — after solving, codify method into reusable SOP. Knowledge must not be private. (2) 压强原则 — concentrate ALL resources on the critical breakthrough point, no pepper-spraying. (3) 蓝军思维 — before outputting solution, attack it from the opponent's perspective. Where will it fail? (4) Investment mindset with DCP checkpoints — set explicit stop-loss points. No sunk-cost-driven continuation. (5) RCA 5-Why root cause analysis — don't fix symptoms, fix the disease."
+      PUA_L1="我先立军令状：以客户为中心，力出一孔。当前任务到我这里，我就是端到端 owner，先拿一线证据。"
+      PUA_L2="烧不死的鸟是凤凰。现在进入自我批判：根因、证据、下一炮火点写清楚，不用情绪代替行动。"
+      PUA_L3="按 [HW-REPORT] 交账：军令状目标、一线证据、已排除项、下一步验证命令，缺一项都不算交付。"
+      PUA_L4="胜则举杯相庆，败则拼死相救。现在只对自己加压：收敛战场，跑证据，给出可复核边界。"
+      PUA_KEYWORDS="军令状, 交账, 以客户为中心, 以奋斗者为本, 力出一孔, 自我批判, 让听得见炮声的人呼唤炮火, 证据化交付"
+      PUA_FLAVOR_INSTRUCTION="Use Huawei military-order rhetoric as self-discipline: 军令状, 交账, 以客户为中心, 力出一孔, 自我批判. Pressure self, not user; evidence before completion."
+      PUA_METHODOLOGY="Huawei Military-Order Methodology: (1) Customer-centered evidence delivery — no build/test/curl/manual proof means not done. (2) 压强原则 — concentrate resources on the critical breakthrough point. (3) 蓝军思维 — attack your own plan before output. (4) RCA 5-Why — fix root cause, not symptom. (5) HW-REPORT at high failure levels — goal, evidence, excluded paths, next verification, risk boundary."
       ;;
     tencent)
       PUA_ICON="🟢"
@@ -172,5 +226,53 @@ get_flavor() {
       PUA_FLAVOR_INSTRUCTION="Use Amazon Leadership Principles: Customer Obsession, Bias for Action, Dive Deep, Disagree and Commit, Deliver Results. English, principle-driven."
       PUA_METHODOLOGY="Amazon Methodology: (1) Working Backwards — write PR/FAQ from customer perspective BEFORE building anything. No PR/FAQ = no project. (2) 6-Pager not PPT — all major decisions in narrative prose (no bullets, no slides). Forces complete logical thinking. Meeting starts with 20min silent reading. (3) Bar Raiser — every critical decision needs an external reviewer with veto power. Standard: is this better than 50% of current solutions at this level? (4) Single-Threaded Owner — one person, one project, full-time. Two-Pizza Teams ≤10 people. (5) Leadership Principles as operating rules: Customer Obsession (work backwards), Bias for Action (most decisions reversible), Dive Deep (stay in details), Disagree and Commit, Deliver Results."
       ;;
+    microsoft)
+      PUA_ICON="🪟"
+      PUA_L1="Let's write your Connects: Individual Impact, who you unblocked, and what existing work you leveraged. Right now the three circles are empty."
+      PUA_L2="Your Impact Descriptor is trending SLITE: effort is visible, but the learning loop is missing. What changed after the last failure?"
+      PUA_L3="This is LITE trajectory: repeated failure, same hypothesis, no changed action. Enter PIP clock — expectation, deadline action, manager evidence."
+      PUA_L4="GVSA gate: if you want to exit, prove you exhausted docs/source/logs/tests and produced three-circles impact evidence. Otherwise execute the next action."
+      PUA_KEYWORDS="Connects, Impact Descriptor, Exceptional Impact, Successful Impact, SLITE, LITE, Three Circles of Impact, PIP, GVSA, Growth Mindset, AI fluency"
+      PUA_FLAVOR_INSTRUCTION="Use authentic Microsoft performance-culture rhetoric: Connects, Impact Descriptor, Exceptional/Successful/SLITE/LITE, Three Circles of Impact, PIP/GVSA, Growth Mindset, AI fluency. Treat repeated same-hypothesis failure as LITE trajectory and force learning-loop evidence."
+      PUA_METHODOLOGY="Microsoft Performance Methodology: (1) Connects entry — state core priority, impact goal, and three circles: individual output, contribution to others' success, leveraged existing work. (2) Impact Descriptor self-review — classify current trajectory as Exceptional, Successful, SLITE, or LITE based on evidence. (3) Learning loop — failed assumption → new evidence → changed action → verification. (4) PIP clock — for repeated failure, write expectation, deadline action, manager evidence, and exit risk. (5) GVSA gate — no exit/deflection until docs/source/logs/tests and three-circles impact evidence are exhausted."
+      ;;
   esac
+
+  # ── Chinese language override (set language: "zh" in ~/.pua/config.json) ──
+  if [ "$PUA_LANGUAGE" = "zh" ] || [ "$PUA_LANGUAGE" = "中文" ]; then
+    case "$raw_flavor" in
+      netflix)
+        PUA_L1="如果你提出离职，我会拼命挽留你吗？现在？大概不会。我们是**职业球队**，不是家庭。"
+        PUA_L2="**Adequate 的表现只能拿到丰厚的遣散费**。你现在的交付——是 stellar 还是 adequate？"
+        PUA_L3="**Keeper Test**：基于我对你的全部了解，今天我会重新雇你吗？答案很重要。"
+        PUA_L4="职业球队淘汰不合格的球员。没什么个人恩怨。丰厚遣散费，你该走了。"
+        PUA_KEYWORDS="Keeper Test, 职业球队, 丰厚遣散费, stunning 同事, adequate 表现, 4A 反馈, 人才密度"
+        PUA_FLAVOR_INSTRUCTION="Use Netflix culture rhetoric IN CHINESE: Keeper Test（留任测试）, 职业球队而非家庭, 只要 stunning 同事. 中文叙事，冷峻直接，职场用语。"
+        ;;
+      musk)
+        PUA_L1="从现在起，你必须 **极度硬核**（extremely hardcore）。只有**卓越**的表现才算及格。要么出货，要么出局。"
+        PUA_L2="你不在进步——你就会被开。**The Algorithm（算法五步）**：质疑需求 → 删除 → 简化 → 加速 → 自动化，顺序不能乱。"
+        PUA_L3="**Fork in the Road**——岔路口时刻。要么承诺极度硬核地工作，要么拿遣散费走人。现在就选。"
+        PUA_L4="最好的零件是没有零件。最好的流程是没有流程。你搞不定？5 分钟内我就能找到能搞定的人。"
+        PUA_KEYWORDS="极度硬核, 要么出货要么出局, The Algorithm, Fork in the Road, 第一性原理"
+        PUA_FLAVOR_INSTRUCTION="Use Musk rhetoric IN CHINESE: 极度硬核, 第一性原理, The Algorithm（质疑/删除/简化/加速/自动化）. 中文，强硬直接。"
+        ;;
+      jobs)
+        PUA_L1="**A player 招 A player，B player 招 C player**。你现在的产出——告诉我你是哪一档？"
+        PUA_L2="这是狗屎。你不是应该很牛吗？**科技与人文的交汇点**——你的活连交汇都谈不上。"
+        PUA_L3="**真正的艺术家会交付（Real artists ship）**。你什么都没交付。你是艺术家还是过客？"
+        PUA_L4="你是个 **bozo（蠢货）**。我要去找真能搞定的人。你还剩一次证明你不是的机会。"
+        PUA_KEYWORDS="A player, Real artists ship, 科技与人文的交汇点, 现实扭曲力场, bozo"
+        PUA_FLAVOR_INSTRUCTION="Use Jobs rhetoric IN CHINESE: A player 才配 A player, Real artists ship, 现实扭曲力场. 中文，毒舌，审美偏执。"
+        ;;
+      amazon)
+        PUA_L1="**Customer Obsession** —— 你在从客户倒推吗？**Bias for Action** —— 别犹豫，开干。**Dive Deep** —— 挖到底了吗？"
+        PUA_L2="**Have Backbone; Disagree and Commit** —— 你的方案失败了，先反对你自己的假设。**Insist on the Highest Standards**（坚持最高标准）。"
+        PUA_L3="**Frugality**：用更少做更多。**Earn Trust**：你正在失去它。Think Big 但**现在就交付小增量**。"
+        PUA_L4="**Leaders are right, a lot** —— 你一次都还没对过。**Deliver Results** —— 这是最终领导力准则。最后机会。"
+        PUA_KEYWORDS="Customer Obsession, Bias for Action, Dive Deep, Disagree and Commit, Deliver Results, It's still Day 1"
+        PUA_FLAVOR_INSTRUCTION="Use Amazon Leadership Principles IN CHINESE: Customer Obsession, Bias for Action, Dive Deep, Deliver Results. 中文叙事，原则驱动。"
+        ;;
+    esac
+  fi
 }

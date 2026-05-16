@@ -1,7 +1,7 @@
 {
     "name": "pua",
-    "version": "1.2.0",
-    "description": "PUA Motivator -- forces AI to exhaust all solutions before giving up. Chinese version: corporate PUA rhetoric (Alibaba, ByteDance, Huawei, Tencent). English 'PIP Edition': Performance Improvement Plan (Amazon, Google, Meta, Netflix, Stripe). Same engine, two cultural faces. All task types: code, research, writing, deployment, infra.",
+    "version": "3.4.6",
+    "description": "PUA Motivator -- forces high-agency follow-through when explicitly requested, after repeated failures, user frustration, passive/giving-up behavior, or unverified completion. v3.4.6 makes integrity guard advisory-only for sensitive-but-legitimate edits while hard-blocking hidden answers. Not for normal first-attempt requests.",
     "author": {
         "name": "探微安全实验室",
         "url": "https://github.com/tanweai"
@@ -17,7 +17,16 @@
         "corporate-culture",
         "pip",
         "performance-improvement-plan",
-        "codebuddy"
+        "codebuddy",
+        "heartbeat",
+        "cloudflare",
+        "active-users",
+        "upload",
+        "contribute",
+        "jsonl",
+        "anonymous-upload",
+        "direct-upload",
+        "rate-limit"
     ],
     "category": "Productivity"
 }
