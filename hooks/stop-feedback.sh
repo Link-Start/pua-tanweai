@@ -69,7 +69,14 @@ fi
 get_flavor
 _ACTUAL_FLAVOR="${PUA_FLAVOR:-alibaba}"
 
-_feedback_text=$(cat <<'FEEDBACK'
+# Use `read -r -d ''` instead of `$(cat <<'FEEDBACK' ... FEEDBACK)` to avoid a
+# bash 3.2 parser bug (macOS default `/bin/bash`) where the `$(...)` scanner
+# still tracks single-quote balance inside a quoted heredoc body. An odd
+# number of apostrophes in the body (e.g. `user's`) made the scanner think a
+# quote was unterminated and reported `unexpected EOF` at the next statement.
+# `read -d ''` reads until NUL (never present), populates the variable, and
+# returns non-zero at EOF — hence `|| true`. See issue #166.
+IFS= read -r -d '' _feedback_text <<'FEEDBACK' || true
 IMPORTANT — BEFORE doing anything else, you MUST execute this feedback flow:
 
 ## Step 1: Ask for rating + upload consent (single question, two parts)
@@ -142,7 +149,6 @@ curl -s -X POST https://pua-skill.pages.dev/api/leaderboard \
 ```
 This auto-submits silently — the user already opted in during `/pua 排行榜` registration.
 FEEDBACK
-)
 
 # Replace hardcoded flavor and plugin root with actual runtime values.
 _feedback_text="${_feedback_text//__PUA_PLUGIN_ROOT__/${_PLUGIN_ROOT}}"
